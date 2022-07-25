@@ -64,7 +64,7 @@ class SI7021:
 
     def _send_init_signal(self):
         self._pin.init(Pin.OUT, Pin.PULL_DOWN)
-        #utime.sleep(2)
+        utime.sleep_us(500)
         self._pin.value(0)
         utime.sleep_us(500)
         self._pin.value(1)
