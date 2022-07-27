@@ -1,24 +1,38 @@
 import array
-
 import micropython
 import utime
 from machine import Pin
 from micropython import const
 
-
 class InvalidChecksum(Exception):
     pass
 
-
 class InvalidPulseCount(Exception):
     pass
-
 
 MAX_UNCHANGED = const(200)
 MIN_INTERVAL_US = const(2000000)
 HIGH_LEVEL = const(50)
 EXPECTED_PULSES = const(80)
 
+def get_data(power_pin, sensor):
+    power_pin.on()
+    utime.sleep(4)
+    
+    retries_count = 10
+    last_exception = None
+    while retries_count > 0:
+        try:
+            temperature = sensor.temperature
+            humidity = sensor.humidity
+            power_pin.off()
+            return (temperature, humidity)
+        except (InvalidChecksum, InvalidPulseCount) as e:
+            retries_count -= 1
+            last_exception = e
+            utime.sleep(1)
+    power_pin.off()    
+    raise last_exception
 
 class SI7021:
     _temperature: float
@@ -32,11 +46,9 @@ class SI7021:
 
     def measure(self):
         current_ticks = utime.ticks_us()
-        if utime.ticks_diff(current_ticks, self._last_measure) < MIN_INTERVAL_US and (
-            self._temperature > -1 or self._humidity > -1
-        ):
+        if utime.ticks_diff(current_ticks, self._last_measure) < MIN_INTERVAL_US:
             return
-
+        
         self._send_init_signal()
         pulses = self._capture_pulses()
         buffer = self._convert_pulses_to_buffer(pulses)
@@ -64,7 +76,7 @@ class SI7021:
 
     def _send_init_signal(self):
         self._pin.init(Pin.OUT, Pin.PULL_DOWN)
-        utime.sleep_us(500)
+        #utime.sleep_us(500)
         self._pin.value(0)
         utime.sleep_us(500)
         self._pin.value(1)
