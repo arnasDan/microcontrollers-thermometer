@@ -1,14 +1,17 @@
 from umqtt.simple import MQTTClient
-import networking
 import formatting
 from time import sleep
 import json
 
+def format_topic(topic):
+    return 'zigbee2mqtt/{}'.format(topic)
+
 class MqttSensorClient:
     _sensors = {}
     
-    def __init__(self, client):
+    def __init__(self, client, topic):
         self._client = client
+        self._topic = str.encode(format_topic(topic))
         client.set_callback(self.__callback)
    
     def __callback(self, topic, message):
@@ -21,11 +24,20 @@ class MqttSensorClient:
                 message['humidity'])
             
     def add_sensor(self, topic):
-        topic = 'zigbee2mqtt/{}'.format(topic)
+        topic = format_topic(topic)
         self._client.subscribe(topic)
         sensor = MqttSensor()
         self._sensors[topic] = sensor
         return sensor
+    
+    def publish(self, temperature, humidity):
+        json_msg = json.dumps({
+            'temperature': temperature,
+            'humidity': humidity
+        })
+        self._client.publish(
+            self._topic,
+            str.encode(json_msg))
     
     def refresh(self):
         self._client.check_msg()
@@ -42,9 +54,8 @@ class MqttSensor:
         return formatting.format_data(
             self._temperature, self._humidity)
 
-def init_client():
-    networking.init_wifi()
-    client = MQTTClient('pi-pico-display', '192.168.0.123')
+def init_client(name, topic):
+    client = MQTTClient(name, '192.168.0.123')
     client.connect()
      
-    return MqttSensorClient(client)
+    return MqttSensorClient(client, topic)

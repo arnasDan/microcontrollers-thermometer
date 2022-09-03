@@ -14,7 +14,8 @@ scl = Pin(3)
 sda = Pin(2)
 
 def run_main_loop():
-    client = mqtt.init_client()
+    init_wifi()
+    client = mqtt.init_client('pi-pico-display', 'screen_temp_sensor')
     mqtt_sensor = client.add_sensor('temp_sensor')
     custom_mqtt_sensor = client.add_sensor('custom_temp_sensor')
     
@@ -26,7 +27,13 @@ def run_main_loop():
     while True:
         sleep(1)
         
-        local_data = sensor.get_data()
+        sensor.refresh()
+        local_data_raw = sensor.get_raw()
+        local_data = sensor.get_formatted()
+        
+        if (local_data_raw is not None):
+            temp, hum = local_data_raw
+            client.publish(temp, hum)
         
         client.refresh()
         mqtt_data = mqtt_sensor.get_data()
@@ -48,4 +55,4 @@ if __name__ == "__main__":
         run_main_loop()
     except Exception as e:
         print(e)
-        reset()
+        #reset()
