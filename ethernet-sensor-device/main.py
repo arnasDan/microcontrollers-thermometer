@@ -15,18 +15,26 @@ def run_main_loop():
     networking.init_ethernet()
     mqtt_client = mqtt.init_client('pi-pico-sensor', 'custom_temp_sensor')
     
-    while True:        
-        temp, humidity = dht.get_data(sensor_power, sensor)       
+    while True:
+        sleep(10)
+        
+        try:
+            temp, humidity = dht.get_data(sensor_power, sensor)
+        except Exception as e:
+            print(e)
+            print('sensor error')
+            continue
         print(temp)
         print(humidity)
         
         mqtt_client.publish(temp, humidity)
         
         utils.collect_garbage()
-        sleep(10)
 
 try:
     run_main_loop()
 except Exception as e:
     print(e)
-    #reset() 
+    print('will reset in 30 seconds')
+    sleep(30)
+    reset() 
