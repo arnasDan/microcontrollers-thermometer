@@ -1,4 +1,4 @@
-# pi-pico-thermometer
+# microcontrollers-thermometer
 Pi Pico temperature &amp; humidity tracking
 
 Hardware:
